@@ -62,6 +62,7 @@ func (r *CgoReceiver) Start() error {
 	if res == 1 {
 		return fmt.Errorf("fail to init probe")
 	}
+	go C.removeWhiteListForGo()
 	time.Sleep(2 * time.Second)
 	r.subEvent()
 	// Wait for the C routine running

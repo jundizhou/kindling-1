@@ -12,6 +12,8 @@ int runForGo();
 int getKindlingEvent(void **kindlingEvent);
 int subEventForGo(char* eventName, char* category);
 int startProfile();
+void updateCameraMonitorWhitelistForGo(unsigned long pid, int isAdd, unsigned long ts);
+void removeWhiteListForGo();
 int stopProfile();
 #ifdef __cplusplus
 }

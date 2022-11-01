@@ -1,5 +1,14 @@
 package cpuanalyzer
 
+/*
+#cgo LDFLAGS: -L ./ -lkindling  -lstdc++ -ldl
+#cgo CFLAGS: -I .
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdio.h>
+#include "../../receiver/cgoreceiver/cgo_func.h"
+*/
+import "C"
 import (
 	"errors"
 	"github.com/Kindling-project/kindling/collector/pkg/filepathhelper"
@@ -205,7 +214,7 @@ func (t *SendEventsTask) run() {
 func (ca *CpuAnalyzer) sendEvents(keyElements *model.AttributeMap, pid uint32, startTime uint64, endTime uint64) {
 	ca.lock.Lock()
 	defer ca.lock.Unlock()
-
+	C.updateCameraMonitorWhitelistForGo(C.ulong(pid), 1, C.ulong(startTime))
 	maxSegmentSize := ca.cfg.GetSegmentSize()
 	tidCpuEvents, exist := ca.cpuPidEvents[pid]
 	if !exist {
