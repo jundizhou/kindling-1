@@ -10,6 +10,10 @@
 #include <thread>
 
 #include "converter/cpu_converter.h"
+#include <thread>
+#include "unistd.h"
+
+#include <chrono>
 
 
 cpu_converter *cpuConverter;
@@ -21,6 +25,7 @@ int cnt = 0;
 int MAX_USERATTR_NUM = 8;
 map<string, ppm_event_type> m_events;
 map<string, Category> m_categories;
+map<int64_t, int64_t> m_camera_whitelist;
 vector<QObject *> qls;
 
 bool is_start_profile = false;
@@ -108,6 +113,16 @@ void set_eventmask(sinsp *inspector) {
 	}
 }
 
+void update_camera_monitor_whitelist(int64_t pid, int isAdd, int64_t ts){
+    if(isAdd == 1){
+        m_camera_whitelist[pid] = ts;
+        inspector->add_camera_monitor_whitelist(pid);
+    }else {
+        m_camera_whitelist.erase(pid);
+        inspector->remove_camera_monitor_whitelist(pid);
+    }
+}
+
 int init_probe() {
 	int argc = 1;
 	QCoreApplication app(argc, 0);
@@ -138,8 +153,7 @@ int init_probe() {
 		suppress_events_comm(inspector);
 		inspector->open("");
 		set_eventmask(inspector);
-
-		cpuConverter = new cpu_converter(inspector);
+        cpuConverter = new cpu_converter(inspector);
 	}
 	catch(const exception &e)
 	{
@@ -187,12 +201,16 @@ int getEvent(void **pp_kindling_event)
     p_kindling_event = (kindling_event_t_for_go *) *pp_kindling_event;
     uint16_t userAttNumber = 0;
     uint16_t source = get_kindling_source(ev->get_type());
-    for (auto it = qls.begin(); it != qls.end(); it++) {
-        KindlingInterface *plugin = qobject_cast<KindlingInterface *>(*it);
-        if (plugin) {
-            plugin->addCache(ev, inspector);
-        }
+    map<int64_t, int64_t>::iterator white_key = m_camera_whitelist.find(threadInfo->m_pid);
+    if(white_key!=m_camera_whitelist.end())
+    {
+        for (auto it = qls.begin(); it != qls.end(); it++) {
+            KindlingInterface *plugin = qobject_cast<KindlingInterface *>(*it);
+            if (plugin) {
+                plugin->addCache(ev, inspector);
+            }
 
+        }
     }
 
     if (ev->get_type() == PPME_SYSCALL_WRITE_X && fdInfo != nullptr && fdInfo->is_file()) {
@@ -217,7 +235,7 @@ int getEvent(void **pp_kindling_event)
 
 	}
 
-	if (ev_type == PPME_CPU_ANALYSIS_E) {
+    if (ev_type == PPME_CPU_ANALYSIS_E && white_key!=m_camera_whitelist.end()) {
 		char* tmp_comm;
 
 		map<uint64_t, char*>::iterator key = ptid_comm.find(threadInfo->m_pid<<32 | (threadInfo->m_tid & 0xFFFFFFFF));
@@ -567,6 +585,20 @@ void print_event(sinsp_evt *s_evt){
         string line;
         if (formatter->tostring(s_evt, &line)) {
             cout<< line << endl;
+        }
+    }
+}
+
+void removeWhiteList(){
+    while (true) {
+        cout<<"start remove while list"<<endl;
+        sleep(30000);
+        for(auto it = m_camera_whitelist.begin(); it != m_camera_whitelist.end();) {
+            if (it->second / 1000000000 - chrono::system_clock::now().time_since_epoch().count() > 600) {
+                m_camera_whitelist.erase(it++);
+            } else {
+                it++;
+            }
         }
     }
 }

@@ -11,8 +11,10 @@ extern "C" {
 int runForGo();
 int getKindlingEvent(void **kindlingEvent);
 void subEventForGo(char* eventName, char* category);
+void updateCameraMonitorWhitelistForGo(unsigned long pid, int isAdd, unsigned long ts);
 int startProfile();
 int stopProfile();
+void removeWhiteListForGo();
 #ifdef __cplusplus
 }
 #endif

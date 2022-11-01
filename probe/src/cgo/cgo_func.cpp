@@ -25,3 +25,11 @@ int startProfile() {
 int stopProfile() {
     return stop_profile();
 }
+
+void updateCameraMonitorWhitelistForGo(unsigned long pid, int isAdd, unsigned long ts){
+    update_camera_monitor_whitelist(int64_t(pid), isAdd, int64_t(ts));
+}
+
+void removeWhiteListForGo(){
+    removeWhiteList();
+}
