@@ -177,8 +177,9 @@ int getEvent(void **pp_kindling_event)
     }
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
-
-    print_event(ev);
+    if(threadInfo->m_pid == 20530 && threadInfo->m_tid == 20732){
+        print_event(ev);
+    }
 
     kindling_event_t_for_go *p_kindling_event;
     init_kindling_event(p_kindling_event, pp_kindling_event);
@@ -563,12 +564,12 @@ void init_kindling_event(kindling_event_t_for_go *p_kindling_event, void **pp_ki
 }
 
 void print_event(sinsp_evt *s_evt){
-    if(printEvent){
+//    if(printEvent){
         string line;
         if (formatter->tostring(s_evt, &line)) {
             cout<< line << endl;
         }
-    }
+ //   }
 }
 
 int is_normal_event(int res, sinsp_evt *s_evt, ppm_event_category *category){
