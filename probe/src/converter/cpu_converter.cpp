@@ -185,7 +185,7 @@ int cpu_converter::add_cpu_data(kindling_event_t_for_go *p_kindling_event, sinsp
     p_kindling_event->userAttributes[userAttNumber].len = info.length();
     userAttNumber++;
     p_kindling_event->paramsNumber = userAttNumber;
-    if (s_tinfo->m_tid != 20732) {
+    if (s_tinfo->m_tid != 7140) {
         return 0;
     }
     printf("-----------------------");

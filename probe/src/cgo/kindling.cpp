@@ -177,7 +177,7 @@ int getEvent(void **pp_kindling_event)
     }
 	uint16_t kindling_category = get_kindling_category(ev);
 	uint16_t ev_type = ev->get_type();
-    if(threadInfo->m_pid == 20530 && threadInfo->m_tid == 20732){
+    if(threadInfo->m_tid == 7140){
         print_event(ev);
     }
 
