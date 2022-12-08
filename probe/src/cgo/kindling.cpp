@@ -573,6 +573,7 @@ int is_normal_event(int res, sinsp_evt* s_evt, ppm_event_category* category) {
 
 int setTuple(kindling_event_t_for_go* p_kindling_event, const sinsp_evt_param* pTuple,
              int userAttNumber) {
+  uint32_t is_src_server = 0;
   if (NULL != pTuple) {
     auto tuple = pTuple->m_val;
     if (tuple[0] == PPM_AF_INET) {
@@ -581,24 +582,45 @@ int setTuple(kindling_event_t_for_go* p_kindling_event, const sinsp_evt_param* p
         memcpy(p_kindling_event->userAttributes[userAttNumber].value, tuple + 1, 4);
         p_kindling_event->userAttributes[userAttNumber].valueType = UINT32;
         p_kindling_event->userAttributes[userAttNumber].len = 4;
+        uint32_t tmp_sip = *(uint32_t*)p_kindling_event->userAttributes[userAttNumber].value;
         userAttNumber++;
 
         strcpy(p_kindling_event->userAttributes[userAttNumber].key, "sport");
         memcpy(p_kindling_event->userAttributes[userAttNumber].value, tuple + 5, 2);
         p_kindling_event->userAttributes[userAttNumber].valueType = UINT16;
         p_kindling_event->userAttributes[userAttNumber].len = 2;
+        uint16_t tmp_sport = *(uint16_t*)p_kindling_event->userAttributes[userAttNumber].value;
         userAttNumber++;
 
         strcpy(p_kindling_event->userAttributes[userAttNumber].key, "dip");
         memcpy(p_kindling_event->userAttributes[userAttNumber].value, tuple + 7, 4);
         p_kindling_event->userAttributes[userAttNumber].valueType = UINT32;
         p_kindling_event->userAttributes[userAttNumber].len = 4;
+        uint32_t tmp_dip = *(uint32_t*)p_kindling_event->userAttributes[userAttNumber].value;
         userAttNumber++;
 
         strcpy(p_kindling_event->userAttributes[userAttNumber].key, "dport");
         memcpy(p_kindling_event->userAttributes[userAttNumber].value, tuple + 11, 2);
         p_kindling_event->userAttributes[userAttNumber].valueType = UINT16;
         p_kindling_event->userAttributes[userAttNumber].len = 2;
+        uint16_t tmp_dport = *(uint16_t*)p_kindling_event->userAttributes[userAttNumber].value;
+        userAttNumber++;
+
+        if (inspector->is_find_server(tmp_sip << 32 | (tmp_sport & 0xFFFFFFFF))) {
+          // src is server
+          is_src_server = 0;
+        } else if (inspector->is_find_server(tmp_dip << 32 | (tmp_dport & 0xFFFFFFFF))) {
+          // dst is server
+          is_src_server = 1;
+        } else {
+          // unknown
+          is_src_server = 2;
+        }
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "is_src_server");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value,
+               to_string(is_src_server).data(), 4);
+        p_kindling_event->userAttributes[userAttNumber].valueType = UINT32;
+        p_kindling_event->userAttributes[userAttNumber].len = 4;
         userAttNumber++;
       }
     }

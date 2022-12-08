@@ -30,10 +30,10 @@ else()
   # The falcosecurity/libs git reference (branch name, commit hash, or tag) To update falcosecurity/libs version for the next release, change the
   # default below In case you want to test against another falcosecurity/libs version just pass the variable - ie., `cmake
   # -DAGENT_LIBS_VERSION=dev ..`
-  if(NOT AGENT_LIBS_VERSION)
-    set(AGENT_LIBS_VERSION "6af8600e4bb6496ed5a7785735dcb8cd4304cddf")
-    set(AGENT_LIBS_CHECKSUM "SHA256=ad839ad1b3156dd99a88e3752d4d6e337b50c6ca2622aee3d58bce0268b6f0af")
-  endif()
+  if (NOT AGENT_LIBS_VERSION)
+      set(AGENT_LIBS_VERSION "ce8e40aa17a26bb4d05bee2e513c478fb2131b99")
+      set(AGENT_LIBS_CHECKSUM "SHA256=67457c1212bfb809cf514779e0ce00b98f63f61590141f2c62e5f2faa6aec9f0")
+  endif ()
 
   # cd /path/to/build && cmake /path/to/source
   execute_process(COMMAND "${CMAKE_COMMAND}" -DAGENT_LIBS_VERSION=${AGENT_LIBS_VERSION} -DAGENT_LIBS_CHECKSUM=${AGENT_LIBS_CHECKSUM}
