@@ -365,6 +365,15 @@ int getEvent(void** pp_kindling_event) {
         p_kindling_event->userAttributes[userAttNumber].len = new_state->m_len;
         userAttNumber++;
       }
+      auto segs = ev->get_param_value_raw("segs");
+      if (segs != NULL) {
+        strcpy(p_kindling_event->userAttributes[userAttNumber].key, "segs");
+        memcpy(p_kindling_event->userAttributes[userAttNumber].value, segs->m_val,
+               segs->m_len);
+        p_kindling_event->userAttributes[userAttNumber].valueType = INT32;
+        p_kindling_event->userAttributes[userAttNumber].len = segs->m_len;
+        userAttNumber++;
+      }
       break;
     }
     case PPME_TCP_SEND_RESET_E:
