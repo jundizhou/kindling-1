@@ -10,13 +10,14 @@ set(SOURCE_FILES
 		cgo/cgo_func.cpp
 		cgo/kindling.cpp
 		converter/cpu_converter.cpp
-        cgo/catch_sig.cpp cgo/catch_sig.h)
+        cgo/catch_sig.cpp cgo/catch_sig.h
+        parser/java_info_parser.cpp parser/java_info_parser.h)
 
 add_library(kindling SHARED ${SOURCE_FILES})
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries(kindling
 		sinsp
-		Qt5::Core)
+		Qt6::Core)
 install(TARGETS kindling
 		DESTINATION bin)
