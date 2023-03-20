@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	TcpMetric analyzer.Type = "tcpmetricanalyzer"
+	TcpMetric                analyzer.Type          = "tcpmetricanalyzer"
+	ComponentNumberTcpMetric component.NumComponent = 5
 )
 
 type TcpMetricAnalyzer struct {
@@ -44,6 +45,10 @@ func (a *TcpMetricAnalyzer) Start() error {
 }
 
 func (a *TcpMetricAnalyzer) ConsumableEvents() []string {
+	model.UpdateLastComponent(ComponentNumberTcpMetric, constnames.TcpCloseEEventType)
+	model.UpdateLastComponent(ComponentNumberTcpMetric, constnames.TcpRcvEstablishedEEventType)
+	model.UpdateLastComponent(ComponentNumberTcpMetric, constnames.TcpDropEEventType)
+	model.UpdateLastComponent(ComponentNumberTcpMetric, constnames.TcpRetransmitSkbEEventType)
 	return []string{
 		constnames.TcpCloseEvent,
 		constnames.TcpRcvEstablishedEvent,
@@ -66,7 +71,19 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	case constnames.TcpRetransmitSkbEvent:
 		dataGroup, err = a.generateRetransmit(event)
 	default:
+		if model.GetLastComponent(event.EventType) == ComponentNumberTcpMetric {
+			event.ProcessCompleted = true
+			if event.HolderNumber == 0 {
+				model.FreeKindlingEventFromPool(event)
+			}
+		}
 		return nil
+	}
+	if model.GetLastComponent(event.EventType) == ComponentNumberTcpMetric {
+		event.ProcessCompleted = true
+		if event.HolderNumber == 0 {
+			model.FreeKindlingEventFromPool(event)
+		}
 	}
 	if err != nil {
 		if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, "Event Skip, "); ce != nil {
@@ -82,6 +99,7 @@ func (a *TcpMetricAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	if ce := a.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
 		a.telemetry.Logger.Debug("TcpMetricAnalyzer To NextProcess:\n" + dataGroup.String())
 	}
+	model.FreeKindlingEventFromPool(event)
 	var retError error
 	for _, nextConsumer := range a.consumers {
 		err := nextConsumer.Consume(dataGroup)

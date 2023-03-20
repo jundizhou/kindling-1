@@ -119,7 +119,7 @@ func (r *CgoReceiver) Shutdown() error {
 }
 
 func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
-	ev := new(model.KindlingEvent)
+	ev := model.GetKindlingEventFromPool().(*model.KindlingEvent)
 	ev.Timestamp = uint64(cgoEvent.timestamp)
 	ev.Name = C.GoString(cgoEvent.name)
 	ev.Category = model.Category(cgoEvent.category)
@@ -141,8 +141,10 @@ func convertEvent(cgoEvent *CKindlingEventForGo) *model.KindlingEvent {
 	ev.Ctx.FdInfo.Dport = uint32(cgoEvent.context.fdInfo.dport)
 	ev.Ctx.FdInfo.Source = uint64(cgoEvent.context.fdInfo.source)
 	ev.Ctx.FdInfo.Destination = uint64(cgoEvent.context.fdInfo.destination)
-
+	ev.HolderNumber = 0
+	ev.ProcessCompleted = false
 	ev.ParamsNumber = uint16(cgoEvent.paramsNumber)
+	ev.EventType = uint16(cgoEvent.eventType)
 	ev.Latency = uint64(cgoEvent.latency)
 	for i := 0; i < int(ev.ParamsNumber); i++ {
 		ev.UserAttributes[i].Key = C.GoString(cgoEvent.userAttributes[i].key)

@@ -271,6 +271,7 @@ int getEvent(void** pp_kindling_event) {
   p_kindling_event->context.tinfo.tid = threadInfo->m_tid;
   p_kindling_event->context.tinfo.uid = threadInfo->m_uid;
   p_kindling_event->context.tinfo.gid = threadInfo->m_gid;
+  p_kindling_event->eventType = ev_type;
   p_kindling_event->context.fdInfo.num = ev->get_fd_num();
   if (nullptr != fdInfo) {
     p_kindling_event->context.fdInfo.fdType = fdInfo->m_type;

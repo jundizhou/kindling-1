@@ -80,9 +80,21 @@ func (evts *events) mergeEvent(evt *model.KindlingEvent) {
 	// If the previous data size is smaller than maxPayloadLength, the later one would fill that gap.
 	appendLength := evts.getAppendLength(len(evt.GetData()))
 	if appendLength == 0 {
+		if model.GetLastComponent(evt.EventType) == ComponentNumberNetwork {
+			evt.ProcessCompleted = true
+			if evt.HolderNumber == 0 {
+				model.FreeKindlingEventFromPool(evt)
+			}
+		}
 		return
 	}
 	evts.mergable.data = append(evts.mergable.data, evt.GetData()[0:appendLength]...)
+	if model.GetLastComponent(evt.EventType) == ComponentNumberNetwork {
+		evt.ProcessCompleted = true
+		if evt.HolderNumber == 0 {
+			model.FreeKindlingEventFromPool(evt)
+		}
+	}
 }
 
 // getAppendLength returns the length to accommodate the new event according to the remaining size and

@@ -29,6 +29,24 @@ const (
 	SpanEvent          = "apm_span_event"
 	OtherEvent         = "other"
 
+	ReadXEventType     = 7
+	WriteXEventType    = 9
+	ReadvXEventType    = 117
+	WritevXEventType   = 119
+	SendToXEventType   = 31
+	RecvFromXEventType = 35
+	SendMsgXEventType  = 49
+
+	SendMMsgXEventType          = 51
+	RecvMsgXEventType           = 53
+	ConnectXEventType           = 23
+	TcpCloseEEventType          = 328
+	TcpRcvEstablishedEEventType = 326
+	TcpDropEEventType           = 330
+	TcpRetransmitSkbEEventType  = 332
+	TcpConnectXEventType        = 335
+	TcpSetStateEEventType       = 336
+
 	ProcessExitEvent = "procexit"
 	GrpcUprobeEvent  = "grpc_uprobe"
 	// NetRequestMetricGroupName is used for dataGroup generated from networkAnalyzer.

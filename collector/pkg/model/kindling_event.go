@@ -3,9 +3,12 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Kindling-project/kindling/collector/pkg/component"
 	"math"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 )
 
 type Source int32
@@ -254,14 +257,17 @@ type KindlingEvent struct {
 	// Name of Kindling Event
 	Name string
 	// Category of Kindling Event, enum
-	Category Category
+	Category  Category
+	EventType uint16
 	// Number of UserAttributes
 	ParamsNumber uint16
 	Latency      uint64
 	// User-defined Attributions of Kindling Event, now including latency for syscall.
 	UserAttributes [16]KeyValue
 	// Context includes Thread information and Fd information.
-	Ctx Context
+	Ctx              Context
+	HolderNumber     int
+	ProcessCompleted bool
 }
 
 func (k *KindlingEvent) Reset() {
@@ -611,4 +617,47 @@ func bytesReader(data []byte, maxLength int) string {
 	} else {
 		return nonASCII.ReplaceAllString(string(data), ".")
 	}
+}
+
+var kindlingEventPool *sync.Pool
+
+func init() {
+	getNumber = 0
+	putNumber = 0
+	kindlingEventPool = createKindlingEventPool()
+	go func() {
+		for {
+			fmt.Println("get number: %ld \n", getNumber)
+			fmt.Println("put number: %ld \n", putNumber)
+			time.Sleep(10 * time.Second)
+		}
+	}()
+}
+func createKindlingEventPool() *sync.Pool {
+	return &sync.Pool{New: func() interface{} {
+		return new(KindlingEvent)
+	}}
+}
+
+func GetKindlingEventFromPool() interface{} {
+	getNumber++
+	return kindlingEventPool.Get()
+}
+
+func FreeKindlingEventFromPool(ke *KindlingEvent) {
+	putNumber++
+	kindlingEventPool.Put(ke)
+}
+
+var eventLastComponent [500]component.NumComponent
+var getNumber uint64
+var putNumber uint64
+
+func UpdateLastComponent(componentNumber component.NumComponent, eventType uint16) {
+	eventLastComponent[eventType] = componentNumber
+}
+
+func GetLastComponent(eventType uint16) component.NumComponent {
+
+	return eventLastComponent[eventType]
 }

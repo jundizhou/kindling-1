@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	CpuProfile analyzer.Type = "cpuanalyzer"
+	CpuProfile         analyzer.Type          = "cpuanalyzer"
+	ComponentNumberCpu component.NumComponent = 3
 )
 
 type CpuAnalyzer struct {
@@ -43,6 +44,9 @@ func (ca *CpuAnalyzer) Type() analyzer.Type {
 }
 
 func (ca *CpuAnalyzer) ConsumableEvents() []string {
+	//model.UpdateLastComponent(ComponentNumberCpu, constnames.CpuEventXEventType)
+	//model.UpdateLastComponent(ComponentNumberCpu, constnames.WriteXEventType)
+	//model.UpdateLastComponent(ComponentNumberCpu, constnames.ReadvXEventType)
 	return []string{constnames.CpuEvent, constnames.JavaFutexInfo, constnames.TransactionIdEvent, constnames.ProcessExitEvent, constnames.SpanEvent}
 }
 
@@ -92,6 +96,7 @@ func (ca *CpuAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	case constnames.SpanEvent:
 		ca.ConsumeSpanEvent(event)
 	}
+	model.FreeKindlingEventFromPool(event)
 	return nil
 }
 

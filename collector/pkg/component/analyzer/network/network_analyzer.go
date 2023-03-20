@@ -30,7 +30,8 @@ const (
 	CACHE_ADD_THRESHOLD   = 50
 	CACHE_RESET_THRESHOLD = 5000
 
-	Network analyzer.Type = "networkanalyzer"
+	Network                analyzer.Type          = "networkanalyzer"
+	ComponentNumberNetwork component.NumComponent = 2
 )
 
 type NetworkAnalyzer struct {
@@ -91,6 +92,15 @@ func getSnaplenEnv() int {
 }
 
 func (na *NetworkAnalyzer) ConsumableEvents() []string {
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.ReadXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.WriteXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.ReadvXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.WritevXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.SendToXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.RecvFromXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.SendMsgXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.RecvMsgXEventType)
+	model.UpdateLastComponent(ComponentNumberNetwork, constnames.SendMMsgXEventType)
 	return []string{
 		constnames.ReadEvent,
 		constnames.WriteEvent,
@@ -158,9 +168,19 @@ func (na *NetworkAnalyzer) Type() analyzer.Type {
 
 func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 	if evt.Category != model.Category_CAT_NET {
+		if model.GetLastComponent(evt.EventType) == ComponentNumberNetwork {
+			if evt.HolderNumber == 0 {
+				model.FreeKindlingEventFromPool(evt)
+			} else {
+				evt.ProcessCompleted = true
+			}
+		}
 		return nil
 	}
-
+	if model.GetLastComponent(evt.EventType) == ComponentNumberNetwork {
+		evt.ProcessCompleted = true
+	}
+	evt.HolderNumber++
 	ctx := evt.GetCtx()
 	if ctx == nil || ctx.GetThreadInfo() == nil {
 		return nil
@@ -192,6 +212,7 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 	}
 
 	isRequest, err := evt.IsRequest()
+	var anErr error
 	if err != nil {
 		return err
 	}
@@ -205,10 +226,14 @@ func (na *NetworkAnalyzer) ConsumeEvent(evt *model.KindlingEvent) error {
 			}
 			return nil
 		}
-		return na.analyseRequest(evt)
+		anErr = na.analyseRequest(evt)
 	} else {
-		return na.analyseResponse(evt)
+		anErr = na.analyseResponse(evt)
 	}
+	//if evt.Name == constnames.ReadEvent || evt.Name == constnames.ReadvEvent || evt.Name == constnames.RecvFromEvent || evt.Name == constnames.RecvMsgEvent || evt.Name == constnames.SendMMsgEvent {
+	//	model.FreeKindlingEventFromPool(evt)
+	//}
+	return anErr
 }
 
 func (na *NetworkAnalyzer) consumerFdNoReusingTrace() {
@@ -362,6 +387,27 @@ func (na *NetworkAnalyzer) distributeTraceMetric(oldPairs *messagePairs, newPair
 	// Case 2 Request 498   Connect/Request                         Request
 	// Case 3 Normal             Connect/Request/Response   Request/Response
 	records := na.parseProtocols(oldPairs)
+	if oldPairs.connects != nil {
+		oldPairs.connects.event.HolderNumber--
+		if model.GetLastComponent(oldPairs.connects.event.EventType) == ComponentNumberNetwork && oldPairs.connects.event.HolderNumber == 0 && oldPairs.connects.event.ProcessCompleted {
+			model.FreeKindlingEventFromPool(oldPairs.connects.event)
+		}
+	}
+
+	if oldPairs.requests != nil {
+		oldPairs.requests.event.HolderNumber--
+		if model.GetLastComponent(oldPairs.requests.event.EventType) == ComponentNumberNetwork && oldPairs.requests.event.HolderNumber == 0 && oldPairs.requests.event.ProcessCompleted {
+			model.FreeKindlingEventFromPool(oldPairs.requests.event)
+		}
+	}
+
+	if oldPairs.responses != nil {
+		oldPairs.responses.event.HolderNumber--
+		if model.GetLastComponent(oldPairs.responses.event.EventType) == ComponentNumberNetwork && oldPairs.responses.event.HolderNumber == 0 && oldPairs.responses.event.ProcessCompleted {
+			model.FreeKindlingEventFromPool(oldPairs.responses.event)
+		}
+	}
+
 	for _, record := range records {
 		if ce := na.telemetry.Logger.Check(zapcore.DebugLevel, ""); ce != nil {
 			na.telemetry.Logger.Debug("NetworkAnalyzer To NextProcess:\n" + record.String())

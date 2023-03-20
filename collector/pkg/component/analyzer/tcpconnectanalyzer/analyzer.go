@@ -16,7 +16,10 @@ import (
 	"github.com/Kindling-project/kindling/collector/pkg/model/constnames"
 )
 
-const Type analyzer.Type = "tcpconnectanalyzer"
+const (
+	Type                      analyzer.Type          = "tcpconnectanalyzer"
+	ComponentNumberTcpConnect component.NumComponent = 4
+)
 
 type TcpConnectAnalyzer struct {
 	config        *Config
@@ -52,6 +55,13 @@ func New(cfg interface{}, telemetry *component.TelemetryTools, consumers []consu
 }
 
 func (a *TcpConnectAnalyzer) ConsumableEvents() []string {
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.ConnectXEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.TcpConnectXEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.TcpSetStateEEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.WriteXEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.WritevXEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.SendMsgXEventType)
+	model.UpdateLastComponent(ComponentNumberTcpConnect, constnames.SendToXEventType)
 	return []string{
 		constnames.ConnectEvent,
 		constnames.TcpConnectEvent,
@@ -87,6 +97,10 @@ func (a *TcpConnectAnalyzer) Start() error {
 // ConsumeEvent gets the event from the previous component
 func (a *TcpConnectAnalyzer) ConsumeEvent(event *model.KindlingEvent) error {
 	a.eventChannel <- event
+	if model.GetLastComponent(event.EventType) == ComponentNumberTcpConnect {
+		event.ProcessCompleted = true
+	}
+	event.HolderNumber++
 	return nil
 }
 
@@ -99,6 +113,10 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 	switch event.Name {
 	case constnames.ConnectEvent:
 		if !event.IsTcp() {
+			event.HolderNumber--
+			if model.GetLastComponent(event.EventType) == ComponentNumberTcpConnect && event.HolderNumber == 0 && event.ProcessCompleted {
+				model.FreeKindlingEventFromPool(event)
+			}
 			return
 		}
 		connectStats, err = a.connectMonitor.ReadInConnectExitSyscall(event)
@@ -114,9 +132,17 @@ func (a *TcpConnectAnalyzer) consumeChannelEvent(event *model.KindlingEvent) {
 		fallthrough
 	case constnames.SendMsgEvent:
 		if filterRequestEvent(event) {
+			event.HolderNumber--
+			if model.GetLastComponent(event.EventType) == ComponentNumberTcpConnect && event.HolderNumber == 0 && event.ProcessCompleted {
+				model.FreeKindlingEventFromPool(event)
+			}
 			return
 		}
 		connectStats, err = a.connectMonitor.ReadSendRequestSyscall(event)
+	}
+	event.HolderNumber--
+	if model.GetLastComponent(event.EventType) == ComponentNumberTcpConnect && event.HolderNumber == 0 && event.ProcessCompleted {
+		model.FreeKindlingEventFromPool(event)
 	}
 
 	if err != nil {
